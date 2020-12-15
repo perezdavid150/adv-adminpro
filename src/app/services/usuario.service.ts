@@ -8,6 +8,7 @@ import { map, tap, catchError } from 'rxjs/operators';
 import { Observable, of } from 'rxjs';
 import { Router } from '@angular/router';
 import { Usuario } from '../models/usuario.model';
+import { CargarUsuario } from '../interfaces/cargar-usuarios.interface';
 
 const base_url = environment.base_url;
 declare const gapi: any;
@@ -34,6 +35,14 @@ export class UsuarioService {
 
   get uid(): string{
     return this.usuario.uid || '';
+  }
+
+  get headers() {
+    return {
+      headers: {
+        'x-token': this.token
+      }
+    };
   }
 
   googleInit() {
@@ -109,7 +118,7 @@ export class UsuarioService {
     data = {
       ...data,
       role: this.usuario.role
-    }
+    };
 
     return this.http.put(`${ base_url }/usuarios/${ this.uid }`, data, {
       headers: {
@@ -136,6 +145,25 @@ export class UsuarioService {
                 .pipe(
                   tap( (resp: any) => {
                     localStorage.setItem('token', resp.token );
+                  })
+                );
+
+  }
+
+  cargarUsuarios(desde: number = 0) {
+
+    const url = `${ base_url }/usuarios?desde=${ desde }`;
+
+    return this.http.get<CargarUsuario>(url, this.headers)
+                .pipe(
+                  map( resp => {
+                    const usuarios = resp.usuarios.map(
+                      user => new Usuario(user.nombre, user.email, '', user.img, user.google, user.role, user.uid
+                    ));
+                    return {
+                      total: resp.total,
+                      usuarios
+                    };
                   })
                 );
 
